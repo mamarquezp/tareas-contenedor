@@ -1,0 +1,124 @@
+name: entrega
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Lo mínimo que necesita el trabajo. Por defecto GitHub da más de lo que hace
+# falta: bajarlo es gratis y es la primera línea de defensa.
+permissions:
+  contents: read
+
+env:
+  # La compuerta de tamaño. Si tu imagen la pasa, el CI se pone rojo.
+  # Bájalo a medida que vayas optimizando: es tu marcador personal.
+  LIMITE_MB: 400
+
+jobs:
+  # ── 1 · lo barato primero ────────────────────────────────────────────────
+  calidad:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24]
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm tipos
+      - run: pnpm lint
+
+  # ── 2 · la imagen ────────────────────────────────────────────────────────
+  imagen:
+    runs-on: ubuntu-latest
+    needs: calidad
+    steps:
+      - uses: actions/checkout@v7
+
+      # Sin buildx no hay caché de GitHub: el driver por defecto no sabe
+      # exportarla, y falla en silencio. Esto no es opcional.
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Construir
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: false
+          load: true
+          tags: tareas-contenedor:ci
+          # cache-from y cache-to van siempre en pareja. mode=max guarda
+          # también las etapas intermedias, que es lo que de verdad ahorra
+          # tiempo en un Dockerfile multietapa.
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: La compuerta de tamaño
+        run: |
+          BYTES=$(docker image inspect tareas-contenedor:ci --format '{{.Size}}')
+          MB=$((BYTES / 1000000))
+          echo "La imagen pesa ${MB} MB (el límite son ${LIMITE_MB} MB)"
+          echo "### Imagen: ${MB} MB / ${LIMITE_MB} MB" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$MB" -gt "$LIMITE_MB" ]; then
+            echo "::error::La imagen pesa ${MB} MB y el límite son ${LIMITE_MB} MB"
+            exit 1
+          fi
+
+      - name: Que arranque y responda
+        run: |
+          docker run -d --name prueba -p 3999:3000 tareas-contenedor:ci
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:3999/api/salud > /tmp/salud.json; then
+              cat /tmp/salud.json; break
+            fi
+            sleep 1
+          done
+          test -s /tmp/salud.json || { docker logs prueba; exit 1; }
+
+      - name: Que NO corra como root
+        run: |
+          UID_EN_CONTENEDOR=$(docker exec prueba id -u)
+          echo "El proceso corre como uid ${UID_EN_CONTENEDOR}"
+          if [ "$UID_EN_CONTENEDOR" = "0" ]; then
+            echo "::error::El contenedor corre como root"
+            exit 1
+          fi
+
+      - name: Apagar
+        if: ${{ always() }}
+        run: docker rm -f prueba || true
+
+  # ── 3 · entornos y secretos ──────────────────────────────────────────────
+  #
+  # Este trabajo solo corre en main y está atado al entorno «produccion».
+  # Si ese entorno tiene revisores obligatorios, aquí se detiene y espera
+  # a que alguien apriete el botón. Eso es una compuerta humana, y es la
+  # única que no se puede automatizar.
+  publicar:
+    runs-on: ubuntu-latest
+    needs: imagen
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: produccion
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Lo que se puede enseñar y lo que no
+        env:
+          # vars  → configuración. Se ve en los logs sin problema.
+          # secrets → credenciales. GitHub las tacha si aparecen.
+          REGION: ${{ vars.REGION }}
+          LLAVE_API: ${{ secrets.LLAVE_API }}
+        run: |
+          echo "Región: ${REGION:-no configurada}"
+          echo "Longitud de la llave: ${#LLAVE_API}"
+          echo "Si imprimo la llave entera, GitHub la tacha: ${LLAVE_API:-vacía}"

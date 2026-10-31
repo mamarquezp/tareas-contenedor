@@ -1,0 +1,27 @@
+{
+  "name": "tareas-contenedor",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "tipos": "tsc --noEmit",
+    "medir": "node scripts/medir.mjs",
+    "tablero": "node scripts/medir.mjs --resumen"
+  },
+  "dependencies": {
+    "next": "^16.0.0",
+    "postgres": "^3.4.5",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "eslint": "^9.0.0",
+    "eslint-config-next": "^16.0.0",
+    "typescript": "^5.9.0"
+  }
+}

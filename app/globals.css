@@ -1,0 +1,14 @@
+:root { color-scheme: light }
+* { box-sizing: border-box }
+body { margin:0; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  background:#f4f7fa; color:#1c2630 }
+main { max-width: 34rem; margin: 3rem auto; padding: 0 1rem }
+h1 { color:#aa182b; font-size:1.6rem; margin-bottom:.25rem }
+p.sub { color:#5c6670; margin-top:0 }
+.tarjeta { background:#fff; border:1px solid #d8dee4; border-radius:12px; padding:1.5rem }
+ul { list-style:none; padding:0; margin:0 }
+li { display:flex; gap:.6rem; padding:.5rem 0; border-bottom:1px solid #eef2f6 }
+li:last-child { border-bottom:0 }
+code { font-family: ui-monospace,'Courier New',monospace; background:#edf6fb;
+  padding:.1em .35em; border-radius:4px; font-size:.9em }
+.pie { margin-top:1.5rem; color:#5c6670; font-size:.9rem }

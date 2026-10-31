@@ -1,0 +1,33 @@
+# La aplicación y su base, juntas.
+#
+# `docker compose up --build` levanta las dos. La aplicación funciona aunque
+# la base no esté: /api/salud va a decir «sin base» en vez de reventar.
+services:
+  app:
+    build: .
+    container_name: tareas-contenedor-app
+    ports:
+      - '3000:3000'
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@db:5432/tareas
+      APP_VERSION: ${APP_VERSION:-dev}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:17-alpine
+    container_name: tareas-contenedor-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: tareas
+    ports:
+      - '5435:5432'
+    volumes:
+      - ./db:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d tareas']
+      interval: 3s
+      timeout: 3s
+      retries: 20

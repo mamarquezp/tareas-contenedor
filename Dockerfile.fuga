@@ -1,0 +1,22 @@
+# ═══════════════════════════════════════════════════════════════════════════
+#  Bloque 4 · La demostración de treinta segundos
+#
+#  Esta imagen no sirve para nada excepto para probar una cosa:
+#  un secreto que entra por ARG queda escrito en la imagen PARA SIEMPRE,
+#  aunque borres el archivo en la línea siguiente.
+#
+#    docker build -f Dockerfile.fuga --build-arg LLAVE=sk_vive_12345 -t fuga .
+#    docker history --no-trunc fuga | grep sk_vive
+#
+#  Ahí está. En texto plano. En la imagen que ibas a publicar.
+# ═══════════════════════════════════════════════════════════════════════════
+
+FROM alpine:3.21
+
+ARG LLAVE
+
+RUN echo "$LLAVE" > /tmp/llave.txt && \
+    cat /tmp/llave.txt > /dev/null && \
+    rm /tmp/llave.txt
+
+CMD ["echo", "la llave ya no existe... en el sistema de archivos"]
