@@ -14,9 +14,14 @@ WORKDIR /app
 
 RUN corepack enable
 
-COPY . .
+# Copiar primero solo lo que describe las dependencias: así instalar no se
+# invalida cuando cambia un componente.
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
 RUN pnpm install
+
+COPY . .
+
 RUN pnpm build
 
 EXPOSE 3000
