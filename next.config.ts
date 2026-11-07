@@ -7,6 +7,6 @@ import type { NextConfig } from 'next';
 //
 // Pista: está en la documentación de Next bajo «self-hosting».
 // ─────────────────────────────────────────────────────────────────────────────
-const nextConfig: NextConfig = {};
+const nextConfig: NextConfig = {output: 'standalone'};
 
 export default nextConfig;

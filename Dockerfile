@@ -8,17 +8,30 @@
 #  irreconocible, y tu imagen tiene que seguir respondiendo 200 en /api/salud.
 # ═══════════════════════════════════════════════════════════════════════════
 
-FROM node:24
-
+#1 · dependencias
+FROM node:24-slim AS dependencias
 WORKDIR /app
-
 RUN corepack enable
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store pnpm install --frozen-lockfile
 
+#2 · constructor
+FROM node:24-slim AS constructor
+WORKDIR /app
+RUN corepack enable
+COPY --from=dependencias /app/node_modules ./node_modules
 COPY . .
-
-RUN pnpm install
 RUN pnpm build
 
+#3 · servidor
+FROM node:24-alpine AS servidor
+WORKDIR /app
+ENV NODE_ENV=production
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
+COPY --from=constructor /app/public ./public
+COPY --from=constructor /app/.next/standalone ./
+COPY --from=constructor /app/.next/static ./.next/static
 EXPOSE 3000
-
-CMD ["pnpm", "start"]
+USER node
+CMD ["node", "server.js"]
