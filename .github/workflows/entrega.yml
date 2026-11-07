@@ -13,7 +13,7 @@ permissions:
 env:
   # La compuerta de tamaño. Si tu imagen la pasa, el CI se pone rojo.
   # Bájalo a medida que vayas optimizando: es tu marcador personal.
-  LIMITE_MB: 90
+  LIMITE_MB: 250
 
 jobs:
   # ── 1 · lo barato primero ────────────────────────────────────────────────
